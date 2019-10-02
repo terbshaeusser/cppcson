@@ -3,6 +3,7 @@
 #include <functional>
 #include <istream>
 #include <map>
+#include <vector>
 
 namespace cppcson {
 
@@ -14,6 +15,8 @@ private:
   uint32_t endColumn;
 
 public:
+  explicit Location(uint32_t line, uint32_t column);
+
   explicit Location(uint32_t startLine, uint32_t startColumn, uint32_t endLine,
                     uint32_t endColumn);
 
@@ -34,66 +37,131 @@ public:
   friend std::ostream &operator<<(std::ostream &os, const Location &location);
 };
 
-enum class ErrorKind { InvalidType, OutOfRange, MissingKey };
-
-#ifndef CPPCSON_DISABLE_EXCEPTIONS
-class ParseError : public std::runtime_error {
+class Error : public std::runtime_error {
 private:
-  ErrorKind errorKind;
   Location location;
 
 public:
-  explicit ParseError(const std::string &message, ErrorKind errorKind,
-                      const Location &location);
-
-  ErrorKind getErrorKind() const;
+  explicit Error(const std::string &message, const Location &location);
 
   const Location &getLocation() const;
 };
-#endif
+
+class TypeError : public Error {
+public:
+  explicit TypeError(const std::string &expected, const std::string &actual,
+                     const std::string &path, const Location &location);
+};
+
+class OutOfRangeError : public Error {
+public:
+  explicit OutOfRangeError(uint32_t index, const std::string &path,
+                           const Location &location);
+};
+
+class MissingKeyError : public Error {
+public:
+  explicit MissingKeyError(const std::string &key, const std::string &path,
+                           const Location &location);
+};
+
+class SyntaxError : public Error {
+public:
+  explicit SyntaxError(const std::string &message, const Location &location);
+};
+
+class NestingTooDeepError : public Error {
+public:
+  NestingTooDeepError();
+};
 
 class Value {
+  friend class Parser;
+
 private:
-  enum class Kind : int8_t { Bool, Int, Float, String, Null, Array, Object };
+  enum class Kind { Bool, Int, Float, String, Null, Array, Object };
 
   union NonStrValue {
     bool boolValue;
     int64_t intValue;
     double floatValue;
-    const Value *arrayValue;
+    const std::vector<Value> *arrayValue;
     const std::map<std::string, Value> *objectValue;
   };
 
   Kind kind;
-  bool faulty;
-  uint32_t itemCount;
   Location location;
-  Value *parent;
-  std::string key;
+  std::string path;
   std::string strValue;
   NonStrValue nonStrValue;
 
   static const char *toString(Kind kind);
 
-  explicit Value(Kind kind, bool faulty, uint32_t itemCount,
-                 const Location &location, Value *parent,
-                 const std::string &key, const std::string &strValue,
-                 const NonStrValue &nonStrValue);
+  explicit Value(Kind kind, const Location &location, const std::string &path,
+                 const std::string &strValue, const NonStrValue &nonStrValue);
+
+  static Value fromBool(const Location &location, const std::string &path,
+                        bool value);
+
+  static Value fromInt(const Location &location, const std::string &path,
+                       int64_t value);
+
+  static Value fromFloat(const Location &location, const std::string &path,
+                         double value);
+
+  static Value fromString(const Location &location, const std::string &path,
+                          const std::string &value);
+
+  static Value fromNull(const Location &location, const std::string &path);
+
+  static Value fromArray(const Location &location, const std::string &path,
+                         const std::vector<Value> *arrayValue);
+
+  static Value fromObject(const Location &location, const std::string &path,
+                          const std::map<std::string, Value> *objectValue);
+
+  void release();
 
   void ensureKind(Kind expected) const;
 
 public:
+  struct iterator {
+    friend Value;
+
+  private:
+    bool isArray;
+    std::vector<Value>::const_iterator itr;
+    std::map<std::string, Value>::const_iterator mapItr;
+
+    explicit iterator(
+        bool isArray, const std::vector<Value>::const_iterator &itr,
+        const std::map<std::string, Value>::const_iterator &mapItr);
+
+  public:
+    bool operator==(const iterator &other) const;
+
+    bool operator!=(const iterator &other) const;
+
+    const Value &operator*() const;
+
+    const Value &operator->() const;
+
+    iterator &operator++();
+
+    iterator operator++(int);
+  };
+
   Value(Value &&other) noexcept;
 
   Value(const Value &) = delete;
 
   ~Value();
 
-  bool isFaulty() const;
-
   uint32_t getItemCount() const;
 
   const Location &getLocation() const;
+
+  const std::string &getPath() const;
 
   bool isBool() const;
 
@@ -129,7 +197,9 @@ public:
 
   bool contains(const std::string &key) const;
 
-  std::string getPath() const;
+  iterator begin() const;
+
+  iterator end() const;
 
   Value &operator=(Value &&other) noexcept;
 
@@ -142,9 +212,6 @@ public:
 
 struct Options {
   uint32_t maxDepth;
-  std::function<void(const std::string &message, ErrorKind errorKind,
-                     const Location &location)>
-      onParseError;
 };
 
 extern const Options DEFAULT_OPTIONS;
