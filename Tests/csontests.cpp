@@ -56,7 +56,8 @@ TEST(Int, decMax) {
   auto root = cppcson::parse(stream);
 
   EXPECT_EQ(0, root.getItemCount());
-  EXPECT_EQ(cppcson::Location(1, 1, 1, str.length()), root.getLocation());
+  EXPECT_EQ(cppcson::Location(1, 1, 1, static_cast<uint32_t>(str.length())),
+            root.getLocation());
   EXPECT_TRUE(root.isInt());
   EXPECT_EQ(std::numeric_limits<int64_t>::max(), root.asInt());
   EXPECT_EQ(".", root.getPath());
@@ -69,7 +70,8 @@ TEST(Int, decMin) {
   auto root = cppcson::parse(stream);
 
   EXPECT_EQ(0, root.getItemCount());
-  EXPECT_EQ(cppcson::Location(1, 1, 1, str.length()), root.getLocation());
+  EXPECT_EQ(cppcson::Location(1, 1, 1, static_cast<uint32_t>(str.length())),
+            root.getLocation());
   EXPECT_TRUE(root.isInt());
   EXPECT_EQ(std::numeric_limits<int64_t>::min(), root.asInt());
   EXPECT_EQ(".", root.getPath());
@@ -94,7 +96,8 @@ TEST(Int, hexMax) {
   auto root = cppcson::parse(stream);
 
   EXPECT_EQ(0, root.getItemCount());
-  EXPECT_EQ(cppcson::Location(1, 1, 1, str.length()), root.getLocation());
+  EXPECT_EQ(cppcson::Location(1, 1, 1, static_cast<uint32_t>(str.length())),
+            root.getLocation());
   EXPECT_TRUE(root.isInt());
   EXPECT_EQ(std::numeric_limits<int64_t>::max(), root.asInt());
   EXPECT_EQ(".", root.getPath());
@@ -107,7 +110,8 @@ TEST(Int, hexMin) {
   auto root = cppcson::parse(stream);
 
   EXPECT_EQ(0, root.getItemCount());
-  EXPECT_EQ(cppcson::Location(1, 1, 1, str.length()), root.getLocation());
+  EXPECT_EQ(cppcson::Location(1, 1, 1, static_cast<uint32_t>(str.length())),
+            root.getLocation());
   EXPECT_TRUE(root.isInt());
   EXPECT_EQ(std::numeric_limits<int64_t>::min(), root.asInt());
   EXPECT_EQ(".", root.getPath());
@@ -133,7 +137,8 @@ TEST(Int, binMax) {
   auto root = cppcson::parse(stream);
 
   EXPECT_EQ(0, root.getItemCount());
-  EXPECT_EQ(cppcson::Location(1, 1, 1, str.length()), root.getLocation());
+  EXPECT_EQ(cppcson::Location(1, 1, 1, static_cast<uint32_t>(str.length())),
+            root.getLocation());
   EXPECT_TRUE(root.isInt());
   EXPECT_EQ(std::numeric_limits<int64_t>::max(), root.asInt());
   EXPECT_EQ(".", root.getPath());
@@ -147,7 +152,8 @@ TEST(Int, binMin) {
   auto root = cppcson::parse(stream);
 
   EXPECT_EQ(0, root.getItemCount());
-  EXPECT_EQ(cppcson::Location(1, 1, 1, str.length()), root.getLocation());
+  EXPECT_EQ(cppcson::Location(1, 1, 1, static_cast<uint32_t>(str.length())),
+            root.getLocation());
   EXPECT_TRUE(root.isInt());
   EXPECT_EQ(std::numeric_limits<int64_t>::min(), root.asInt());
   EXPECT_EQ(".", root.getPath());

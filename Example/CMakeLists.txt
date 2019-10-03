@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(example)
 
-set(CMAKE_CXX_STANDARD 11)
-
 # Disable building cppcson tests
-set(CPPCSON_BUILD_TESTS OFF)
+set(CPPCSON_BUILD_TESTS OFF CACHE BOOL "")
 
 # Add cppcson as sub directory
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR}/cppcson)

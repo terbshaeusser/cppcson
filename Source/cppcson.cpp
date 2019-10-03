@@ -1,10 +1,13 @@
 #include "cppcson.hpp"
 #include <cmath>
+#include <string>
 
 namespace cppcson {
 
 static const std::vector<Value> EMPTY_VECTOR;
 static const std::map<std::string, Value> EMPTY_MAP;
+
+static bool isspace(int c) { return c >= 0 && std::isspace(c); }
 
 static Location combine(const Location &start, uint32_t endLine,
                         uint32_t endColumn) {
@@ -241,9 +244,9 @@ Value::~Value() { release(); }
 uint32_t Value::getItemCount() const {
   switch (kind) {
   case Kind::Array:
-    return nonStrValue.arrayValue->size();
+    return static_cast<uint32_t>(nonStrValue.arrayValue->size());
   case Kind::Object:
-    return nonStrValue.objectValue->size();
+    return static_cast<uint32_t>(nonStrValue.objectValue->size());
   default:
     return 0;
   }
@@ -604,7 +607,7 @@ private:
       ++nextColumn;
     }
 
-    return c;
+    return static_cast<char>(c);
   }
 
   char lookaheadChar() {
@@ -614,7 +617,7 @@ private:
       return 0;
     }
 
-    return c;
+    return static_cast<char>(c);
   }
 
   static bool isDelimiter(char c) {
@@ -685,7 +688,7 @@ private:
 
     auto base = 10;
     auto sign = (text[0] == '-' || text[0] == '+') ? text[0] : ' ';
-    auto startIndex = sign != ' ' ? 1 : 0;
+    size_t startIndex = sign != ' ' ? 1 : 0;
 
     if (text.length() > startIndex + 1 && text[startIndex] == '0') {
       auto c = text[startIndex + 1];
