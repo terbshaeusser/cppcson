@@ -309,7 +309,17 @@ TEST(String, multiLineSingle2) {
   EXPECT_EQ(".", root.getPath());
 }
 
-// TODO: Multiline
+TEST(String, multiLine) {
+  std::istringstream stream("'''\n  Hello \nWorld'''");
+
+  auto root = cppcson::parse(stream);
+
+  EXPECT_EQ(0, root.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 1, 3, 8), root.getLocation());
+  EXPECT_TRUE(root.isString());
+  EXPECT_EQ("\nHello \nWorld", root.asString());
+  EXPECT_EQ(".", root.getPath());
+}
 
 TEST(String, escapes) {
   std::istringstream stream(R"('\\ \t \n \r \" \'')");
@@ -466,4 +476,136 @@ TEST(Array, iterate) {
   EXPECT_EQ(2, count);
 }
 
-// TODO: Objects
+TEST(Object, simple) {
+  std::istringstream stream("key1: false\nkey2: 1\n,\nkey3: 'a'");
+
+  auto root = cppcson::parse(stream);
+
+  EXPECT_EQ(3, root.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 1, 4, 9), root.getLocation());
+  EXPECT_TRUE(root.isObject());
+  EXPECT_EQ(".", root.getPath());
+  EXPECT_TRUE(root.contains("key1"));
+  EXPECT_TRUE(root.contains("key2"));
+  EXPECT_TRUE(root.contains("key3"));
+
+  auto &item1 = root.item("key1");
+  EXPECT_EQ(0, item1.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 7, 1, 11), item1.getLocation());
+  EXPECT_TRUE(item1.isBool());
+  EXPECT_FALSE(item1.asBool());
+  EXPECT_EQ(".key1", item1.getPath());
+
+  auto &item2 = root.item("key2");
+  EXPECT_EQ(0, item2.getItemCount());
+  EXPECT_EQ(cppcson::Location(2, 7), item2.getLocation());
+  EXPECT_TRUE(item2.isInt());
+  EXPECT_EQ(1, item2.asInt());
+  EXPECT_EQ(".key2", item2.getPath());
+
+  auto &item3 = root.item("key3");
+  EXPECT_EQ(0, item3.getItemCount());
+  EXPECT_EQ(cppcson::Location(4, 7, 4, 9), item3.getLocation());
+  EXPECT_TRUE(item3.isString());
+  EXPECT_EQ("a", item3.asString());
+  EXPECT_EQ(".key3", item3.getPath());
+}
+
+TEST(Object, stringKey) {
+  std::istringstream stream(
+      "'key': true\n\"key.2\": false\n'''multi\n  linekey''': null");
+
+  auto root = cppcson::parse(stream);
+
+  EXPECT_EQ(3, root.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 1, 4, 18), root.getLocation());
+  EXPECT_TRUE(root.isObject());
+  EXPECT_EQ(".", root.getPath());
+  EXPECT_TRUE(root.contains("key"));
+  EXPECT_TRUE(root.contains("key.2"));
+  EXPECT_TRUE(root.contains("multi\nlinekey"));
+
+  auto &item1 = root.item("key");
+  EXPECT_EQ(0, item1.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 8, 1, 11), item1.getLocation());
+  EXPECT_TRUE(item1.isBool());
+  EXPECT_TRUE(item1.asBool());
+  EXPECT_EQ(".key", item1.getPath());
+
+  auto &item2 = root.item("key.2");
+  EXPECT_EQ(0, item2.getItemCount());
+  EXPECT_EQ(cppcson::Location(2, 10, 2, 14), item2.getLocation());
+  EXPECT_TRUE(item2.isBool());
+  EXPECT_FALSE(item2.asBool());
+  EXPECT_EQ(".'key.2'", item2.getPath());
+
+  auto &item3 = root.item("multi\nlinekey");
+  EXPECT_EQ(0, item3.getItemCount());
+  EXPECT_EQ(cppcson::Location(4, 15, 4, 18), item3.getLocation());
+  EXPECT_TRUE(item3.isNull());
+  EXPECT_EQ(".'multi\\nlinekey'", item3.getPath());
+}
+
+TEST(Object, duplicateKey) {
+  std::istringstream stream("a: true\na: false");
+
+  auto root = cppcson::parse(stream);
+
+  EXPECT_EQ(1, root.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 1, 2, 8), root.getLocation());
+  EXPECT_TRUE(root.isObject());
+  EXPECT_EQ(".", root.getPath());
+  EXPECT_TRUE(root.contains("a"));
+
+  auto &item1 = root.item("a");
+  EXPECT_EQ(0, item1.getItemCount());
+  EXPECT_EQ(cppcson::Location(2, 4, 2, 8), item1.getLocation());
+  EXPECT_TRUE(item1.isBool());
+  EXPECT_FALSE(item1.asBool());
+  EXPECT_EQ(".a", item1.getPath());
+}
+
+TEST(Object, nested) {
+  std::istringstream stream("a:\n  b: 2\nc: 3");
+
+  auto root = cppcson::parse(stream);
+
+  EXPECT_EQ(2, root.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 1, 3, 4), root.getLocation());
+  EXPECT_TRUE(root.isObject());
+  EXPECT_EQ(".", root.getPath());
+  EXPECT_TRUE(root.contains("a"));
+  EXPECT_TRUE(root.contains("c"));
+
+  auto &item1 = root.item("a");
+  EXPECT_EQ(1, item1.getItemCount());
+  EXPECT_EQ(cppcson::Location(2, 3, 2, 6), item1.getLocation());
+  EXPECT_TRUE(item1.isObject());
+  EXPECT_EQ(".a", item1.getPath());
+  EXPECT_TRUE(item1.contains("b"));
+
+  auto &item11 = item1.item("b");
+  EXPECT_EQ(0, item11.getItemCount());
+  EXPECT_EQ(cppcson::Location(2, 6), item11.getLocation());
+  EXPECT_TRUE(item11.isInt());
+  EXPECT_EQ(2, item11.asInt());
+  EXPECT_EQ(".a.b", item11.getPath());
+
+  auto &item2 = root.item("c");
+  EXPECT_EQ(0, item2.getItemCount());
+  EXPECT_EQ(cppcson::Location(3, 4), item2.getLocation());
+  EXPECT_TRUE(item2.isInt());
+  EXPECT_EQ(3, item2.asInt());
+  EXPECT_EQ(".c", item2.getPath());
+}
+
+TEST(Comment, simple) {
+  std::istringstream stream("# first line\nnull # another comment");
+
+  auto root = cppcson::parse(stream);
+
+  EXPECT_EQ(0, root.getItemCount());
+  EXPECT_EQ(cppcson::Location(2, 1, 2, 4), root.getLocation());
+  EXPECT_TRUE(root.isNull());
+  EXPECT_EQ(".", root.getPath());
+}
