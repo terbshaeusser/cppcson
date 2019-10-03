@@ -75,6 +75,44 @@ public:
   NestingTooDeepError();
 };
 
+class Value;
+
+class Keys {
+  friend Value;
+
+private:
+  const std::map<std::string, Value> &objectValue;
+
+  explicit Keys(const std::map<std::string, Value> &objectValue);
+
+public:
+  struct iterator {
+    friend Keys;
+
+  private:
+    std::map<std::string, Value>::const_iterator itr;
+
+    explicit iterator(const std::map<std::string, Value>::const_iterator &itr);
+
+  public:
+    bool operator==(const iterator &other) const;
+
+    bool operator!=(const iterator &other) const;
+
+    const std::string &operator*() const;
+
+    const std::string &operator->() const;
+
+    iterator &operator++();
+
+    iterator operator++(int);
+  };
+
+  iterator begin() const;
+
+  iterator end() const;
+};
+
 class Value {
   friend class Parser;
 
@@ -125,31 +163,7 @@ private:
   void ensureKind(Kind expected) const;
 
 public:
-  struct iterator {
-    friend Value;
-
-  private:
-    bool isArray;
-    std::vector<Value>::const_iterator itr;
-    std::map<std::string, Value>::const_iterator mapItr;
-
-    explicit iterator(
-        bool isArray, const std::vector<Value>::const_iterator &itr,
-        const std::map<std::string, Value>::const_iterator &mapItr);
-
-  public:
-    bool operator==(const iterator &other) const;
-
-    bool operator!=(const iterator &other) const;
-
-    const Value &operator*() const;
-
-    const Value &operator->() const;
-
-    iterator &operator++();
-
-    iterator operator++(int);
-  };
+  using iterator = std::vector<Value>::const_iterator;
 
   Value(Value &&other) noexcept;
 
@@ -196,6 +210,8 @@ public:
   const Value &item(const std::string &key) const;
 
   bool contains(const std::string &key) const;
+
+  Keys keys() const;
 
   iterator begin() const;
 

@@ -159,6 +159,40 @@ NestingTooDeepError::NestingTooDeepError()
   throw std::runtime_error("Unreachable code reached");
 }
 
+Keys::Keys(const std::map<std::string, Value> &objectValue)
+    : objectValue(objectValue) {}
+
+Keys::iterator::iterator(
+    const std::map<std::string, Value>::const_iterator &itr)
+    : itr(itr) {}
+
+bool Keys::iterator::operator==(const Keys::iterator &other) const {
+  return itr == other.itr;
+}
+
+bool Keys::iterator::operator!=(const Keys::iterator &other) const {
+  return itr != other.itr;
+}
+
+const std::string &Keys::iterator::operator*() const { return itr->first; }
+
+const std::string &Keys::iterator::operator->() const { return itr->first; }
+
+Keys::iterator &Keys::iterator::operator++() {
+  ++itr;
+  return *this;
+}
+
+Keys::iterator Keys::iterator::operator++(int) {
+  auto result = *this;
+  ++itr;
+  return result;
+}
+
+Keys::iterator Keys::begin() const { return iterator(objectValue.begin()); }
+
+Keys::iterator Keys::end() const { return iterator(objectValue.end()); }
+
 const char *Value::toString(Value::Kind kind) {
   switch (kind) {
   case Kind::Bool:
@@ -257,57 +291,6 @@ void Value::ensureKind(Value::Kind expected) const {
   if (kind != expected) {
     throw TypeError(toString(expected), toString(kind), getPath(), location);
   }
-}
-
-Value::iterator::iterator(
-    bool isArray, const std::vector<Value>::const_iterator &itr,
-    const std::map<std::string, Value>::const_iterator &mapItr)
-    : isArray(isArray), itr(itr), mapItr(mapItr) {}
-
-bool Value::iterator::operator==(const Value::iterator &other) const {
-  return itr == other.itr && mapItr == other.mapItr;
-}
-
-bool Value::iterator::operator!=(const Value::iterator &other) const {
-  return itr != other.itr || mapItr != other.mapItr;
-}
-
-const Value &Value::iterator::operator*() const {
-  if (isArray) {
-    return *itr;
-  }
-
-  return mapItr->second;
-}
-
-const Value &Value::iterator::operator->() const {
-  if (isArray) {
-    return *itr;
-  }
-
-  return mapItr->second;
-}
-
-Value::iterator &Value::iterator::operator++() {
-  if (isArray) {
-    ++itr;
-  } else {
-    ++mapItr;
-  }
-
-  return *this;
-}
-
-Value::iterator Value::iterator::operator++(int) {
-  auto self = *this;
-
-  if (isArray) {
-    ++itr;
-  } else {
-    ++mapItr;
-  }
-
-  return self;
 }
 
 Value::Value(Value &&other) noexcept
@@ -427,29 +410,22 @@ bool Value::contains(const std::string &key) const {
   return nonStrValue.objectValue->find(key) != nonStrValue.objectValue->end();
 }
 
+Keys Value::keys() const {
+  ensureKind(Kind::Object);
+
+  return Keys(*nonStrValue.objectValue);
+}
+
 Value::iterator Value::begin() const {
-  if (kind == Kind::Array) {
-    return iterator(true, nonStrValue.arrayValue->begin(), EMPTY_MAP.begin());
-  }
+  ensureKind(Kind::Array);
 
-  if (kind == Kind::Object) {
-    return iterator(false, EMPTY_VECTOR.begin(),
-                    nonStrValue.objectValue->begin());
-  }
-
-  return iterator(true, EMPTY_VECTOR.begin(), EMPTY_MAP.begin());
+  return nonStrValue.arrayValue->begin();
 }
 
 Value::iterator Value::end() const {
-  if (kind == Kind::Array) {
-    return iterator(true, nonStrValue.arrayValue->end(), EMPTY_MAP.end());
-  }
+  ensureKind(Kind::Array);
 
-  if (kind == Kind::Object) {
-    return iterator(false, EMPTY_VECTOR.end(), nonStrValue.objectValue->end());
-  }
-
-  return iterator(true, EMPTY_VECTOR.end(), EMPTY_MAP.end());
+  return nonStrValue.arrayValue->end();
 }
 
 Value &Value::operator=(Value &&other) noexcept {
