@@ -234,4 +234,8 @@ extern const Options DEFAULT_OPTIONS;
 
 Value parse(std::istream &stream, const Options &options = DEFAULT_OPTIONS);
 
+std::string escapeKey(const std::string &str);
+
+std::string escape(const std::string &str);
+
 } // namespace cppcson

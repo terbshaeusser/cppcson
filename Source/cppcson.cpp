@@ -6,81 +6,6 @@ namespace cppcson {
 static const std::vector<Value> EMPTY_VECTOR;
 static const std::map<std::string, Value> EMPTY_MAP;
 
-static std::string escape(const std::string &str) {
-  std::string result = "'";
-
-  if (!str.empty()) {
-    result.reserve(2 + str.length());
-
-    size_t pos = 0;
-    size_t nextUnprocessed = 0;
-
-    while (true) {
-      pos = str.find_first_of("\"\'\b\f\n\r\t\\", pos);
-      if (pos == std::string::npos) {
-        break;
-      }
-
-      if (pos != nextUnprocessed) {
-        result += str.substr(nextUnprocessed, pos - nextUnprocessed);
-      }
-
-      switch (str[pos]) {
-      case '"': {
-        result += "\\\"";
-        break;
-      }
-      case '\'': {
-        result += "\\'";
-        break;
-      }
-      case '\b': {
-        result += "\\b";
-        break;
-      }
-      case '\f': {
-        result += "\\f";
-        break;
-      }
-      case '\n': {
-        result += "\\n";
-        break;
-      }
-      case '\r': {
-        result += "\\r";
-        break;
-      }
-      case '\t': {
-        result += "\\t";
-        break;
-      }
-      case '\\': {
-        result += "\\\\";
-        break;
-      }
-      }
-
-      ++pos;
-      nextUnprocessed = pos;
-    }
-
-    if (nextUnprocessed != str.length()) {
-      result += str.substr(nextUnprocessed);
-    }
-  }
-
-  result += "'";
-  return result;
-}
-
-static std::string escapeKey(const std::string &str) {
-  if (str.find_first_of(" \"\'\n\r\t\\.[],{}") == std::string::npos) {
-    return str;
-  }
-
-  return escape(str);
-}
-
 static Location combine(const Location &start, uint32_t endLine,
                         uint32_t endColumn) {
   return Location(start.getStartLine(), start.getStartColumn(), endLine,
@@ -1191,7 +1116,8 @@ private:
             break;
           }
 
-          if (token.location.getStartColumn() != objectIndent) {
+          if (start.kind != TokenKind::OpenCurly &&
+              token.location.getStartColumn() != objectIndent) {
             if (comma) {
               throw SyntaxError(
                   "Expected key but none found (check indentation?)",
@@ -1272,6 +1198,81 @@ const Options DEFAULT_OPTIONS = {1024};
 
 Value parse(std::istream &stream, const Options &options) {
   return Parser(stream, options).parse();
+}
+
+std::string escapeKey(const std::string &str) {
+  if (str.find_first_of(" \"\'\n\r\t\\.[],{}") == std::string::npos) {
+    return str;
+  }
+
+  return escape(str);
+}
+
+std::string escape(const std::string &str) {
+  std::string result = "\"";
+
+  if (!str.empty()) {
+    result.reserve(2 + str.length());
+
+    size_t pos = 0;
+    size_t nextUnprocessed = 0;
+
+    while (true) {
+      pos = str.find_first_of("\"\'\b\f\n\r\t\\", pos);
+      if (pos == std::string::npos) {
+        break;
+      }
+
+      if (pos != nextUnprocessed) {
+        result += str.substr(nextUnprocessed, pos - nextUnprocessed);
+      }
+
+      switch (str[pos]) {
+      case '"': {
+        result += "\\\"";
+        break;
+      }
+      case '\'': {
+        result += "\\'";
+        break;
+      }
+      case '\b': {
+        result += "\\b";
+        break;
+      }
+      case '\f': {
+        result += "\\f";
+        break;
+      }
+      case '\n': {
+        result += "\\n";
+        break;
+      }
+      case '\r': {
+        result += "\\r";
+        break;
+      }
+      case '\t': {
+        result += "\\t";
+        break;
+      }
+      case '\\': {
+        result += "\\\\";
+        break;
+      }
+      }
+
+      ++pos;
+      nextUnprocessed = pos;
+    }
+
+    if (nextUnprocessed != str.length()) {
+      result += str.substr(nextUnprocessed);
+    }
+  }
+
+  result += "\"";
+  return result;
 }
 
 } // namespace cppcson

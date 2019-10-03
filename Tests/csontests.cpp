@@ -537,13 +537,13 @@ TEST(Object, stringKey) {
   EXPECT_EQ(cppcson::Location(2, 10, 2, 14), item2.getLocation());
   EXPECT_TRUE(item2.isBool());
   EXPECT_FALSE(item2.asBool());
-  EXPECT_EQ(".'key.2'", item2.getPath());
+  EXPECT_EQ(".\"key.2\"", item2.getPath());
 
   auto &item3 = root.item("multi\nlinekey");
   EXPECT_EQ(0, item3.getItemCount());
   EXPECT_EQ(cppcson::Location(4, 15, 4, 18), item3.getLocation());
   EXPECT_TRUE(item3.isNull());
-  EXPECT_EQ(".'multi\\nlinekey'", item3.getPath());
+  EXPECT_EQ(".\"multi\\nlinekey\"", item3.getPath());
 }
 
 TEST(Object, duplicateKey) {
