@@ -310,14 +310,14 @@ TEST(String, multiLineSingle2) {
 }
 
 TEST(String, multiLine) {
-  std::istringstream stream("'''\n  Hello \nWorld'''");
+  std::istringstream stream("'''\n  Hello \nWorld \n'''");
 
   auto root = cppcson::parse(stream);
 
   EXPECT_EQ(0, root.getItemCount());
-  EXPECT_EQ(cppcson::Location(1, 1, 3, 8), root.getLocation());
+  EXPECT_EQ(cppcson::Location(1, 1, 4, 3), root.getLocation());
   EXPECT_TRUE(root.isString());
-  EXPECT_EQ("\nHello \nWorld", root.asString());
+  EXPECT_EQ("Hello \nWorld", root.asString());
   EXPECT_EQ(".", root.getPath());
 }
 

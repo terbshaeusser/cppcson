@@ -72,7 +72,8 @@ OutOfRangeError::OutOfRangeError(uint32_t index, const std::string &path,
 MissingKeyError::MissingKeyError(const std::string &key,
                                  const std::string &path,
                                  const Location &location)
-    : Error("Key " + key + " does not exist under " + path, location) {}
+    : Error("Key " + escapeKey(key) + " does not exist under " + path,
+            location) {}
 
 SyntaxError::SyntaxError(const std::string &message, const Location &location)
     : Error(message, location) {}
@@ -885,6 +886,17 @@ private:
       }
 
       newLine = (newLine && (c == ' ' || c == '\t')) || c == '\n';
+    }
+
+    if (isMultiline) {
+      auto startPos = text.find_first_not_of(" \n\r\t");
+      auto endPos = text.find_last_not_of(" \n\r\t");
+
+      if (startPos == std::string::npos) {
+        text = "";
+      } else {
+        text = text.substr(startPos, endPos - startPos + 1);
+      }
     }
 
     text.shrink_to_fit();
