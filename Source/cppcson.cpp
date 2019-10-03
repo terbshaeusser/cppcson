@@ -7,8 +7,70 @@ static const std::vector<Value> EMPTY_VECTOR;
 static const std::map<std::string, Value> EMPTY_MAP;
 
 static std::string escape(const std::string &str) {
-  // TODO: escape
-  return "";
+  std::string result = "'";
+
+  if (!str.empty()) {
+    result.reserve(2 + str.length());
+
+    size_t pos = 0;
+    size_t nextUnprocessed = 0;
+
+    while (true) {
+      pos = str.find_first_of("\"\'\b\f\n\r\t\\", pos);
+      if (pos == std::string::npos) {
+        break;
+      }
+
+      if (pos != nextUnprocessed) {
+        result += str.substr(nextUnprocessed, pos - nextUnprocessed);
+      }
+
+      switch (str[pos]) {
+      case '"': {
+        result += "\\\"";
+        break;
+      }
+      case '\'': {
+        result += "\\'";
+        break;
+      }
+      case '\b': {
+        result += "\\b";
+        break;
+      }
+      case '\f': {
+        result += "\\f";
+        break;
+      }
+      case '\n': {
+        result += "\\n";
+        break;
+      }
+      case '\r': {
+        result += "\\r";
+        break;
+      }
+      case '\t': {
+        result += "\\t";
+        break;
+      }
+      case '\\': {
+        result += "\\\\";
+        break;
+      }
+      }
+
+      ++pos;
+      nextUnprocessed = pos;
+    }
+
+    if (nextUnprocessed != str.length()) {
+      result += str.substr(nextUnprocessed);
+    }
+  }
+
+  result += "'";
+  return result;
 }
 
 static std::string escapeKey(const std::string &str) {
@@ -767,6 +829,7 @@ private:
     auto isMultiline = false;
     long lastCodeUnit = -1;
     auto lastCodeUnitLocation = Location::unknown();
+    auto newLine = false;
 
     auto c = lookaheadChar();
     if (c == startChar) {
@@ -832,6 +895,14 @@ private:
         }
         case '\'': {
           text += '\'';
+          break;
+        }
+        case 'b': {
+          text += '\b';
+          break;
+        }
+        case 'f': {
+          text += '\f';
           break;
         }
         case 'n': {
@@ -908,11 +979,14 @@ private:
                             Location(escapeLine, escapeColumn));
         }
         }
-      } else {
+      } else if (!isspace(c) || !newLine) {
         text += c;
       }
+
+      newLine = (newLine && (c == ' ' || c == '\t')) || c == '\n';
     }
 
+    text.shrink_to_fit();
     return Token(TokenKind::String, combine(startLocation, endLine, endColumn),
                  text);
   }
@@ -929,6 +1003,7 @@ private:
     Location location(startLocation.getStartLine(),
                       startLocation.getStartColumn(), endLine, endColumn);
 
+    text.shrink_to_fit();
     if (text == "true") {
       return Token(TokenKind::True, location);
     } else if (text == "false") {
@@ -1111,7 +1186,7 @@ private:
           if (path != ".") {
             itemPath += ".";
           }
-          itemPath += itemKey;
+          itemPath += escapeKey(itemKey);
 
           expect(TokenKind::Colon);
 
