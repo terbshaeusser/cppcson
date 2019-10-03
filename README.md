@@ -17,7 +17,7 @@ Tested on:
 
 ## Requirements
 
-* CMake (version 3.15 or later)
+* CMake (version 3.10 or later)
 * A C++11 compatible compiler such as g++ or clang
 * Googletest (only for tests)
 
