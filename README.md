@@ -8,12 +8,20 @@ Features:
 * Meta information for parsed values (line, column etc.)
 * Proper error reporting
 * No dependencies
+* Thread safe
+* Support for \u escapes in strings
 
 Tested on:
 
 * Linux g++ 8.3.0
 * macOS Clang 10.0.1
 * Windows Visual Studio 2019
+
+Note:
+
+* The parser interprets the input as encoded in UTF-8. To use other Unicode
+encodings such as UTF-16, have a look on
+[utf8streams](https://github.com/terbshaeusser/utf8streams).
 
 ## Requirements
 
