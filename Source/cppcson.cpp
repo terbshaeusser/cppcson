@@ -256,6 +256,8 @@ const Location &Value::getLocation() const { return location; }
 
 const std::string &Value::getPath() const { return path; }
 
+Value::Kind Value::getKind() const { return kind; }
+
 bool Value::isBool() const { return kind == Kind::Bool; }
 
 bool Value::isInt() const { return kind == Kind::Int; }
