@@ -3,17 +3,28 @@
 #include <iostream>
 
 static void print(const cppcson::Value &value, bool isRoot, int32_t indent) {
-  if (value.isNull()) {
-    std::cout << "null";
-  } else if (value.isBool()) {
+  switch (value.getKind()) {
+  case cppcson::Value::Kind::Bool: {
     std::cout << value.asBool();
-  } else if (value.isInt()) {
+    break;
+  }
+  case cppcson::Value::Kind::Int: {
     std::cout << value.asInt();
-  } else if (value.isFloat()) {
+    break;
+  }
+  case cppcson::Value::Kind::Float: {
     std::cout << value.asFloat();
-  } else if (value.isString()) {
+    break;
+  }
+  case cppcson::Value::Kind::String: {
     std::cout << cppcson::escape(value.asString());
-  } else if (value.isArray()) {
+    break;
+  }
+  case cppcson::Value::Kind::Null: {
+    std::cout << "null";
+    break;
+  }
+  case cppcson::Value::Kind::Array: {
     std::cout << "[";
 
     indent += 2;
@@ -24,23 +35,32 @@ static void print(const cppcson::Value &value, bool isRoot, int32_t indent) {
     indent -= 2;
 
     std::cout << std::endl << std::string(indent, ' ') << "]";
-  } else if (value.isObject()) {
+    break;
+  }
+  case cppcson::Value::Kind::Object: {
     if (!isRoot) {
       indent += 2;
     }
 
     auto skipNewline = isRoot;
 
-    for (auto &key : value.keys()) {
-      if (skipNewline) {
-        skipNewline = false;
-      } else {
-        std::cout << std::endl;
-      }
+    if (value.getItemCount() == 0) {
+      std::cout << "{}";
+    } else {
+      for (auto &key : value.keys()) {
+        if (skipNewline) {
+          skipNewline = false;
+        } else {
+          std::cout << std::endl;
+        }
 
-      std::cout << std::string(indent, ' ') << cppcson::escapeKey(key) << ": ";
-      print(value.item(key), false, indent);
+        std::cout << std::string(indent, ' ') << cppcson::escapeKey(key)
+                  << ": ";
+        print(value.item(key), false, indent);
+      }
     }
+    break;
+  }
   }
 }
 

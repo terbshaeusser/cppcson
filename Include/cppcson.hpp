@@ -116,9 +116,10 @@ public:
 class Value {
   friend class Parser;
 
-private:
+public:
   enum class Kind { Bool, Int, Float, String, Null, Array, Object };
 
+private:
   union NonStrValue {
     bool boolValue;
     int64_t intValue;
@@ -176,6 +177,8 @@ public:
   const Location &getLocation() const;
 
   const std::string &getPath() const;
+
+  Kind getKind() const;
 
   bool isBool() const;
 
