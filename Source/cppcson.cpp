@@ -1131,6 +1131,9 @@ private:
             }
 
             break;
+          } else if (token.kind == TokenKind::EoD &&
+                     start.kind != TokenKind::OpenCurly) {
+            break;
           }
 
           if (start.kind != TokenKind::OpenCurly &&
