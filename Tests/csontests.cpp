@@ -517,6 +517,25 @@ TEST(Object, simple) {
   EXPECT_EQ(".key3", item3.getPath());
 }
 
+TEST(Object, eodAfterNewline) {
+  std::istringstream stream("key1: false\n");
+
+  auto root = cppcson::parse(stream);
+
+  EXPECT_EQ(1, root.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 1, 1, 11), root.getLocation());
+  EXPECT_TRUE(root.isObject());
+  EXPECT_EQ(".", root.getPath());
+  EXPECT_TRUE(root.contains("key1"));
+
+  auto &item1 = root.item("key1");
+  EXPECT_EQ(0, item1.getItemCount());
+  EXPECT_EQ(cppcson::Location(1, 7, 1, 11), item1.getLocation());
+  EXPECT_TRUE(item1.isBool());
+  EXPECT_FALSE(item1.asBool());
+  EXPECT_EQ(".key1", item1.getPath());
+}
+
 TEST(Object, stringKey) {
   std::istringstream stream(
       "'key': true\n\"key.2\": false\n'''multi\n  linekey''': null");
