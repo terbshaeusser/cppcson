@@ -222,6 +222,52 @@ void Value::ensureKind(Value::Kind expected) const {
   }
 }
 
+Value Value::newBool(bool value) {
+  return Value::fromBool(Location::unknown(), "", value);
+}
+
+Value Value::newInt(int64_t value) {
+  return Value::fromInt(Location::unknown(), "", value);
+}
+
+Value Value::newFloat(double value) {
+  return Value::fromFloat(Location::unknown(), "", value);
+}
+
+Value Value::newString(const std::string &value) {
+  return Value::fromString(Location::unknown(), "", value);
+}
+
+Value Value::newNull() { return Value::fromNull(Location::unknown(), ""); }
+
+Value Value::newArray() {
+  return Value::fromArray(Location::unknown(), "", &EMPTY_VECTOR);
+}
+
+Value Value::newArray(std::vector<Value> &&list) {
+  const std::vector<Value> *arrayValue = &EMPTY_VECTOR;
+
+  if (!list.empty()) {
+    arrayValue = new std::vector<Value>(std::move(list));
+  }
+
+  return Value::fromArray(Location::unknown(), "", arrayValue);
+}
+
+Value Value::newObject() {
+  return Value::fromObject(Location::unknown(), "", &EMPTY_MAP);
+}
+
+Value Value::newObject(std::map<std::string, Value> &&map) {
+  const std::map<std::string, Value> *objectValue = &EMPTY_MAP;
+
+  if (!map.empty()) {
+    objectValue = new std::map<std::string, Value>(std::move(map));
+  }
+
+  return Value::fromObject(Location::unknown(), "", objectValue);
+}
+
 Value::Value(Value &&other) noexcept
     : kind(other.kind), location(other.location), path(other.path),
       strValue(other.strValue), nonStrValue(other.nonStrValue) {
@@ -339,6 +385,84 @@ bool Value::contains(const std::string &key) const {
   ensureKind(Kind::Object);
 
   return nonStrValue.objectValue->find(key) != nonStrValue.objectValue->end();
+}
+
+void Value::add(Value &&value) {
+  ensureKind(Kind::Array);
+
+  if (nonStrValue.arrayValue == &EMPTY_VECTOR) {
+    nonStrValue.arrayValue = new std::vector<Value>();
+  }
+
+  const_cast<std::vector<Value> *>(nonStrValue.arrayValue)
+      ->push_back(std::move(value));
+}
+
+void Value::add(uint32_t index, Value &&value) {
+  ensureKind(Kind::Array);
+
+  if (nonStrValue.arrayValue == &EMPTY_VECTOR) {
+    nonStrValue.arrayValue = new std::vector<Value>();
+  }
+
+  const_cast<std::vector<Value> *>(nonStrValue.arrayValue)
+      ->insert(nonStrValue.arrayValue->begin() + index, std::move(value));
+}
+
+void Value::add(const std::string &key, Value &&value) {
+  ensureKind(Kind::Object);
+
+  if (nonStrValue.objectValue == &EMPTY_MAP) {
+    nonStrValue.objectValue = new std::map<std::string, Value>();
+  }
+
+  const_cast<std::map<std::string, Value> *>(nonStrValue.objectValue)
+      ->emplace(key, std::move(value));
+}
+
+bool Value::remove(uint32_t index) {
+  ensureKind(Kind::Array);
+
+  if (index < nonStrValue.arrayValue->size()) {
+    const_cast<std::vector<Value> *>(nonStrValue.arrayValue)
+        ->erase(nonStrValue.arrayValue->begin() + index);
+    return true;
+  }
+
+  return false;
+}
+
+bool Value::remove(const std::string &key) {
+  ensureKind(Kind::Object);
+
+  auto itr = nonStrValue.objectValue->find(key);
+  if (itr != nonStrValue.objectValue->end()) {
+    const_cast<std::map<std::string, Value> *>(nonStrValue.objectValue)
+        ->erase(itr);
+    return true;
+  }
+
+  return false;
+}
+
+void Value::clear() {
+  switch (kind) {
+  case Kind::Array: {
+    if (nonStrValue.arrayValue != &EMPTY_VECTOR) {
+      const_cast<std::vector<Value> *>(nonStrValue.arrayValue)->clear();
+    }
+    break;
+  }
+  case Kind::Object: {
+    if (nonStrValue.objectValue != &EMPTY_MAP) {
+      const_cast<std::map<std::string, Value> *>(nonStrValue.objectValue)
+          ->clear();
+    }
+    break;
+  }
+  default:
+    break;
+  }
 }
 
 Keys Value::keys() const {
@@ -1218,6 +1342,89 @@ const Options DEFAULT_OPTIONS = {1024};
 
 Value parse(std::istream &stream, const Options &options) {
   return Parser(stream, options).parse();
+}
+
+static void print(std::ostream &stream, const Value &value, int32_t indent,
+                  bool topMost) {
+  switch (value.getKind()) {
+  case Value::Kind::Bool: {
+    stream << (value.asBool() ? "true" : "false");
+    break;
+  }
+  case Value::Kind::Int: {
+    stream << value.asInt();
+    break;
+  }
+  case Value::Kind::Float: {
+    stream << value.asFloat();
+    break;
+  }
+  case Value::Kind::String: {
+    stream << escape(value.asString());
+    break;
+  }
+  case Value::Kind::Null: {
+    stream << "null";
+    break;
+  }
+  case Value::Kind::Array: {
+    stream << "[";
+    if (value.getItemCount() == 0) {
+      stream << "]";
+    } else {
+      indent += 2;
+
+      for (uint32_t i = 0; i < value.getItemCount(); ++i) {
+        if (i > 0 && value.item(i - 1).getKind() == Value::Kind::Object) {
+          stream << "\n" << std::string(indent - 2, ' ') << ",";
+        }
+
+        stream << "\n" << std::string(indent, ' ');
+        print(stream, value.item(i), indent, false);
+      }
+
+      indent -= 2;
+      stream << "\n" << std::string(indent, ' ') << "]";
+    }
+    break;
+  }
+  case Value::Kind::Object: {
+    if (value.getItemCount() == 0) {
+      stream << "{}";
+    } else {
+      if (!topMost) {
+        indent += 2;
+      }
+
+      auto first = true;
+      for (auto &key : value.keys()) {
+        auto &itemValue = value.item(key);
+
+        if (first) {
+          first = false;
+        } else {
+          stream << "\n" << std::string(indent, ' ');
+        }
+
+        stream << escapeKey(key) << ":";
+
+        if (itemValue.getKind() == Value::Kind::Object) {
+          stream << "\n" << std::string(indent + 2, ' ');
+        } else {
+          stream << " ";
+        }
+        print(stream, itemValue, indent, false);
+      }
+    }
+    break;
+  }
+  default:
+    unreachable();
+  }
+}
+
+void print(std::ostream &stream, const Value &value) {
+  print(stream, value, 0, true);
 }
 
 std::string escapeKey(const std::string &str) {
