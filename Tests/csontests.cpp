@@ -683,3 +683,141 @@ TEST(Comment, simple) {
   EXPECT_TRUE(root.isNull());
   EXPECT_EQ(".", root.getPath());
 }
+
+TEST(Print, nullKeyword) {
+  auto value = cppcson::Value::newNull();
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("null", stream.str());
+}
+
+TEST(Print, trueKeyword) {
+  auto value = cppcson::Value::newBool(true);
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("true", stream.str());
+}
+
+TEST(Print, falseKeyword) {
+  auto value = cppcson::Value::newBool(false);
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("false", stream.str());
+}
+
+TEST(Print, intLiteral) {
+  auto value = cppcson::Value::newInt(0);
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("0", stream.str());
+}
+
+TEST(Print, floatLiteral) {
+  auto value = cppcson::Value::newFloat(10.5);
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("10.5", stream.str());
+}
+
+TEST(Print, stringLiteral) {
+  auto value = cppcson::Value::newString("hello");
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("\"hello\"", stream.str());
+}
+
+TEST(Print, arrayEmpty) {
+  auto value = cppcson::Value::newArray();
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("[]", stream.str());
+}
+
+TEST(Print, arraySimple) {
+  auto value = cppcson::Value::newArray();
+  value.add(cppcson::Value::newInt(1));
+  value.add(cppcson::Value::newInt(2));
+  value.add(cppcson::Value::newInt(3));
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("[\n  1\n  2\n  3\n]", stream.str());
+}
+
+TEST(Print, arrayNested) {
+  auto nestedValue = cppcson::Value::newArray();
+  nestedValue.add(cppcson::Value::newInt(1));
+
+  auto value = cppcson::Value::newArray();
+  value.add(std::move(nestedValue));
+  value.add(cppcson::Value::newInt(3));
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("[\n  [\n    1\n  ]\n  3\n]", stream.str());
+}
+
+TEST(Print, arrayObject) {
+  auto nestedValue = cppcson::Value::newObject();
+  nestedValue.add("a", cppcson::Value::newInt(1));
+
+  auto value = cppcson::Value::newArray();
+  value.add(std::move(nestedValue));
+  value.add(cppcson::Value::newInt(3));
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("[\n  a: 1\n,\n  3\n]", stream.str());
+}
+
+TEST(Print, objectEmpty) {
+  auto value = cppcson::Value::newObject();
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("{}", stream.str());
+}
+
+TEST(Print, objectSimple) {
+  auto value = cppcson::Value::newObject();
+  value.add("a", cppcson::Value::newInt(1));
+  value.add("b", cppcson::Value::newInt(2));
+  value.add("c", cppcson::Value::newInt(3));
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("a: 1\nb: 2\nc: 3", stream.str());
+}
+
+TEST(Print, objectNested) {
+  auto nestedValue = cppcson::Value::newObject();
+  nestedValue.add("b", cppcson::Value::newInt(2));
+
+  auto value = cppcson::Value::newObject();
+  value.add("a", std::move(nestedValue));
+  value.add("c", cppcson::Value::newInt(3));
+
+  std::ostringstream stream;
+  cppcson::print(stream, value);
+
+  EXPECT_EQ("a:\n  b: 2\nc: 3", stream.str());
+}
