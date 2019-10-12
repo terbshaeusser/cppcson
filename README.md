@@ -1,6 +1,6 @@
 # cppcson
 
-The *cppcson* C++ library provides a simple api to parse
+The *cppcson* C++ library provides a simple api to parse and write
 [*.cson files](https://github.com/bevry/cson).
 
 Features:
