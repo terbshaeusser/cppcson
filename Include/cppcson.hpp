@@ -166,6 +166,24 @@ private:
 public:
   using iterator = std::vector<Value>::const_iterator;
 
+  static Value newBool(bool value);
+
+  static Value newInt(int64_t value);
+
+  static Value newFloat(double value);
+
+  static Value newString(const std::string &value);
+
+  static Value newNull();
+
+  static Value newArray();
+
+  static Value newArray(std::vector<Value> &&list);
+
+  static Value newObject();
+
+  static Value newObject(std::map<std::string, Value> &&map);
+
   Value(Value &&other) noexcept;
 
   Value(const Value &) = delete;
@@ -214,6 +232,18 @@ public:
 
   bool contains(const std::string &key) const;
 
+  void add(Value &&value);
+
+  void add(uint32_t index, Value &&value);
+
+  void add(const std::string &key, Value &&value);
+
+  bool remove(uint32_t index);
+
+  bool remove(const std::string &key);
+
+  void clear();
+
   Keys keys() const;
 
   iterator begin() const;
@@ -236,6 +266,8 @@ struct Options {
 extern const Options DEFAULT_OPTIONS;
 
 Value parse(std::istream &stream, const Options &options = DEFAULT_OPTIONS);
+
+void print(std::ostream &stream, const Value &value);
 
 std::string escapeKey(const std::string &str);
 
